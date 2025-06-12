@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Todo } from '../types/Todo';
-import { getTodos } from '../api/todos';
+import { Todo } from '../types/typedefs';
+import { getTodos } from '../api/todosMethods';
 export const useTodos = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);

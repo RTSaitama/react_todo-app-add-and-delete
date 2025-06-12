@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import classNames from 'classnames';
-import { USER_ID } from './api/todos';
+import { USER_ID } from './api/todosMethods';
 import { UserWarning } from './UserWarning';
 import { useTodos } from './hooks/useTodos';
 import { FilterStatus, useFilters } from './hooks/useFilters';

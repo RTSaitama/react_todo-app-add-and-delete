@@ -12,7 +12,6 @@ export const postTodo = (todoData: Omit<Todo, 'id'>) => {
 };
 
 export const deleteTodo = (todoId: number) => {
-  console.log('try delete ', todoId);
   return client.delete(`/todos/${todoId}`);
 };
 

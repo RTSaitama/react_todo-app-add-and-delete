@@ -1,6 +1,7 @@
+/* eslint-disable no-console */
 import React, { useState } from 'react';
 import classNames from 'classnames';
-import { USER_ID } from './api/todosMethods';
+import { postTodo, USER_ID } from './api/todosMethods';
 import { UserWarning } from './UserWarning';
 import { useTodos } from './hooks/useTodos';
 import { FilterStatus, useFilters } from './hooks/useFilters';
@@ -19,7 +20,7 @@ export const App: React.FC = () => {
     return <UserWarning />;
   }
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handlePostTodo = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const noSpaceQuery = query.trim();
@@ -28,7 +29,18 @@ export const App: React.FC = () => {
       return;
     }
 
-    setQuery('');
+    try {
+      const newTodo = await postTodo({
+        title: query.trim(),
+        completed: false,
+        userId: USER_ID,
+      });
+
+      todoListState.setTodos([...todoListState.todos, newTodo]);
+      setQuery('');
+    } catch (error) {
+      console.log('impossible to post new todo now');
+    }
   };
 
   return (
@@ -45,7 +57,7 @@ export const App: React.FC = () => {
             data-cy="ToggleAllButton"
           />
 
-          <form onSubmit={() => handleSubmit}>
+          <form onSubmit={event => handlePostTodo(event)}>
             <input
               data-cy="NewTodoField"
               type="text"

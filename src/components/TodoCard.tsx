@@ -7,9 +7,14 @@ import { deleteTodo, updateTodo } from '../api/todosMethods';
 interface TodoCardProps {
   todoListState: ReturnType<typeof useTodos>;
   todo: Todo;
+  isLoading: boolean;
 }
 
-export const TodoCard: React.FC<TodoCardProps> = ({ todoListState, todo }) => {
+export const TodoCard: React.FC<TodoCardProps> = ({
+  todoListState,
+  todo,
+  isLoading,
+}) => {
   const handleToggleSelectedTodo = async (todoId: number) => {
     const updatedTodos = todoListState.todos.map(td =>
       td.id === todoId ? { ...td, completed: !td.completed } : td,
@@ -54,7 +59,15 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todoListState, todo }) => {
           aria-label="todostatus-label"
         />
       </label>
-
+      <div
+        data-cy="TodoLoader"
+        className={classNames('modal overlay ', {
+          'is-active': !isLoading,
+        })}
+      >
+        <div className="modal-background has-background-white-ter" />
+        <div className="loader" />
+      </div>
       <span data-cy="TodoTitle" className="todo__title">
         {todo.title}
       </span>

@@ -11,6 +11,7 @@ export const App: React.FC = () => {
   const [query, setQuery] = useState<string>('');
   const todoListState = useTodos();
   const todosFilterState = useFilters(todoListState.todos, query);
+  const [isLoading, setIsLoading] = useState(false);
 
   const counter = () => {
     return todoListState.todos.filter(todo => !todo.completed).length;
@@ -30,8 +31,9 @@ export const App: React.FC = () => {
     }
 
     try {
+      setIsLoading(true);
       const newTodo = await postTodo({
-        title: query.trim(),
+        title: noSpaceQuery,
         completed: false,
         userId: USER_ID,
       });
@@ -40,6 +42,8 @@ export const App: React.FC = () => {
       setQuery('');
     } catch (error) {
       console.log('impossible to post new todo now');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -65,6 +69,7 @@ export const App: React.FC = () => {
               placeholder="What needs to be done?"
               value={query}
               onChange={event => setQuery(event.target.value)}
+              autoFocus
             />
           </form>
         </header>
@@ -74,6 +79,7 @@ export const App: React.FC = () => {
           todosFilterState={todosFilterState}
           query={query}
           setQuery={setQuery}
+          isLoading
         />
 
         {todoListState.todos.length > 0 ? (

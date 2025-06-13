@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import React, { useState } from 'react';
 import classNames from 'classnames';
-import { postTodo, USER_ID } from './api/todosMethods';
+import { deleteTodo, postTodo, updateTodo, USER_ID } from './api/todosMethods';
 import { UserWarning } from './UserWarning';
 import { useTodos } from './hooks/useTodos';
 import { FilterStatus, useFilters } from './hooks/useFilters';
@@ -12,6 +12,10 @@ export const App: React.FC = () => {
   const todoListState = useTodos();
   const todosFilterState = useFilters(todoListState.todos, query);
   const [isLoading, setIsLoading] = useState(false);
+
+  const allCompleted =
+    todoListState.todos.length > 0 &&
+    todoListState.todos.every(td => td.completed);
 
   const counter = () => {
     return todoListState.todos.filter(todo => !todo.completed).length;
@@ -27,8 +31,12 @@ export const App: React.FC = () => {
     const noSpaceQuery = query.trim();
 
     if (!noSpaceQuery) {
+      todoListState.setError('Title should not be empty');
+
       return;
     }
+
+    todoListState.setError('');
 
     try {
       setIsLoading(true);
@@ -47,6 +55,73 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleClearCompleted = async () => {
+    if (allCompleted) {
+      return;
+    }
+
+    const todosDone = todoListState.todos.filter(td => td.completed === true);
+
+    try {
+      // Спочатку видаляємо з сервера
+      await Promise.all(todosDone.map(todo => deleteTodo(todo.id)));
+
+      // Тільки після успішного видалення оновлюємо UI
+      const onlyUncompletedTodos = todoListState.todos.filter(
+        td => td.completed !== true,
+      );
+
+      todoListState.setTodos(onlyUncompletedTodos);
+    } catch (error) {
+      console.error('Failed to delete completed todos:', error);
+    }
+  };
+
+  const handleToggleAll = async () => {
+    const newIfCompletedStatus = !allCompleted;
+
+    const todosDone = todoListState.todos.map(td => ({
+      ...td,
+      completed: newIfCompletedStatus,
+    }));
+
+    try {
+      await Promise.all(
+        todoListState.todos.map(todo =>
+          updateTodo(todo.id, { completed: newIfCompletedStatus }),
+        ),
+      );
+
+      todoListState.setTodos(todosDone);
+    } catch (error) {
+      console.log('Failed to toggleAll todos', error);
+    }
+  };
+
+  // const handleClearCompleted = async () => {
+  //   if (todoListState.todos.every(td => td.completed === false)) {
+  //     return;
+  //   }
+
+  //   const todosDone = todoListState.todos.filter(td => td.completed === true);
+
+  //   const onlyUncompletedTodos = todoListState.todos.filter(
+  //     td => td.completed !== true,
+  //   );
+
+  //   todoListState.setTodos(onlyUncompletedTodos);
+
+  //   try {
+  //     todosDone.forEach(todo => deleteTodo(todo.id));
+  //   } catch (error) {
+  //     console.log('no todos to clear');
+  //   }
+  // };
+
+  console.debug('loading:', isLoading);
+
+  //  лінтер заглушив за "невикористання лоадінгу тимчасово"
+
   return (
     <div className="todoapp">
       <h1 className="todoapp__title">todos</h1>
@@ -56,9 +131,10 @@ export const App: React.FC = () => {
           <button
             type="button"
             className={classNames('todoapp__toggle-all', {
-              active: todoListState.todos.every(todo => todo.completed),
+              'is-active': todoListState.todos.every(todo => todo.completed),
             })}
             data-cy="ToggleAllButton"
+            onClick={handleToggleAll}
           />
 
           <form onSubmit={event => handlePostTodo(event)}>
@@ -79,7 +155,7 @@ export const App: React.FC = () => {
           todosFilterState={todosFilterState}
           query={query}
           setQuery={setQuery}
-          isLoading
+          isLoading={isLoading}
         />
 
         {todoListState.todos.length > 0 ? (
@@ -108,6 +184,7 @@ export const App: React.FC = () => {
               type="button"
               className="todoapp__clear-completed"
               data-cy="ClearCompletedButton"
+              onClick={handleClearCompleted}
             >
               Clear completed
             </button>

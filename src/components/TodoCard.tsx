@@ -21,6 +21,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
     );
 
     todoListState.setTodos(updatedTodos);
+
     try {
       const todoCard = updatedTodos.find(td => td.id === todoId);
 
@@ -62,7 +63,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
       <div
         data-cy="TodoLoader"
         className={classNames('modal overlay ', {
-          'is-active': !isLoading,
+          'is-active': isLoading,
         })}
       >
         <div className="modal-background has-background-white-ter" />

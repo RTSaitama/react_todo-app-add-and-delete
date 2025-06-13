@@ -20,6 +20,18 @@ export const useTodos = () => {
       .finally(() => setIsLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    const errorTimer = setTimeout(() => {
+      setError('');
+    }, 3000);
+
+    return () => clearTimeout(errorTimer);
+  }, [error]);
+
   return {
     todos,
     setTodos,

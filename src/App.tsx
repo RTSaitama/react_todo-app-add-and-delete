@@ -1,21 +1,27 @@
 /* eslint-disable no-console */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import classNames from 'classnames';
 import { deleteTodo, postTodo, updateTodo, USER_ID } from './api/todosMethods';
 import { UserWarning } from './UserWarning';
-import { useTodos } from './hooks/useTodos';
-import { FilterStatus, useFilters } from './hooks/useFilters';
+import { useTodos, FilterStatus } from './hooks/useTodos';
 import { TodoList } from './components/TodoList';
+import { ErrorNotification } from './components/ErrorNotification';
 
 export const App: React.FC = () => {
   const [query, setQuery] = useState<string>('');
   const todoListState = useTodos();
-  const todosFilterState = useFilters(todoListState.todos, query);
-  const [isLoading, setIsLoading] = useState(false);
-
+  const { showError } = todoListState;
+  const [loadingTodo, setLoadingTodo] = useState<number | null>(null);
   const allCompleted =
     todoListState.todos.length > 0 &&
     todoListState.todos.every(td => td.completed);
+  const someCompleted = todoListState.todos.some(td => td.completed);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [todoListState.todos, loadingTodo]);
 
   const counter = () => {
     return todoListState.todos.filter(todo => !todo.completed).length;
@@ -36,10 +42,20 @@ export const App: React.FC = () => {
       return;
     }
 
-    todoListState.setError('');
+    todoListState.setError(null);
+
+    const tempTodo = {
+      id: 0,
+      title: noSpaceQuery,
+      completed: false,
+      userId: USER_ID,
+    };
+
+    todoListState.setTempTodo(tempTodo);
+
+    setLoadingTodo(0);
 
     try {
-      setIsLoading(true);
       const newTodo = await postTodo({
         title: noSpaceQuery,
         completed: false,
@@ -48,33 +64,42 @@ export const App: React.FC = () => {
 
       todoListState.setTodos([...todoListState.todos, newTodo]);
       setQuery('');
-    } catch (error) {
-      console.log('impossible to post new todo now');
+    } catch {
+      showError('Unable to add a todo');
     } finally {
-      setIsLoading(false);
+      setLoadingTodo(null);
+      todoListState.setTempTodo(null);
     }
   };
 
   const handleClearCompleted = async () => {
-    if (allCompleted) {
+    const todosDone = todoListState.todos.filter(td => td.completed === true);
+
+    if (todosDone.length === 0) {
       return;
     }
 
-    const todosDone = todoListState.todos.filter(td => td.completed === true);
+    const deleteResults = [];
 
-    try {
-      // Спочатку видаляємо з сервера
-      await Promise.all(todosDone.map(todo => deleteTodo(todo.id)));
-
-      // Тільки після успішного видалення оновлюємо UI
-      const onlyUncompletedTodos = todoListState.todos.filter(
-        td => td.completed !== true,
-      );
-
-      todoListState.setTodos(onlyUncompletedTodos);
-    } catch (error) {
-      console.error('Failed to delete completed todos:', error);
+    for (const todo of todosDone) {
+      try {
+        await deleteTodo(todo.id);
+        deleteResults.push({ id: todo.id, success: true });
+      } catch (error) {
+        deleteResults.push({ id: todo.id, success: false });
+        showError('Unable to delete a todo');
+      }
     }
+
+    const deletedTodos = deleteResults
+      .filter(result => result.success)
+      .map(result => result.id);
+
+    const stayingTodos = todoListState.todos.filter(
+      todo => !deletedTodos.includes(todo.id),
+    );
+
+    todoListState.setTodos(stayingTodos);
   };
 
   const handleToggleAll = async () => {
@@ -94,33 +119,9 @@ export const App: React.FC = () => {
 
       todoListState.setTodos(todosDone);
     } catch (error) {
-      console.log('Failed to toggleAll todos', error);
+      showError('Something went wrong');
     }
   };
-
-  // const handleClearCompleted = async () => {
-  //   if (todoListState.todos.every(td => td.completed === false)) {
-  //     return;
-  //   }
-
-  //   const todosDone = todoListState.todos.filter(td => td.completed === true);
-
-  //   const onlyUncompletedTodos = todoListState.todos.filter(
-  //     td => td.completed !== true,
-  //   );
-
-  //   todoListState.setTodos(onlyUncompletedTodos);
-
-  //   try {
-  //     todosDone.forEach(todo => deleteTodo(todo.id));
-  //   } catch (error) {
-  //     console.log('no todos to clear');
-  //   }
-  // };
-
-  console.debug('loading:', isLoading);
-
-  //  лінтер заглушив за "невикористання лоадінгу тимчасово"
 
   return (
     <div className="todoapp">
@@ -144,18 +145,19 @@ export const App: React.FC = () => {
               className="todoapp__new-todo"
               placeholder="What needs to be done?"
               value={query}
+              ref={inputRef}
               onChange={event => setQuery(event.target.value)}
-              autoFocus
+              disabled={loadingTodo !== null}
             />
           </form>
         </header>
 
         <TodoList
           todoListState={todoListState}
-          todosFilterState={todosFilterState}
           query={query}
           setQuery={setQuery}
-          isLoading={isLoading}
+          loadingTodoId={loadingTodo}
+          setLoadingTodoId={setLoadingTodo}
         />
 
         {todoListState.todos.length > 0 ? (
@@ -165,26 +167,26 @@ export const App: React.FC = () => {
             </span>
 
             <nav className="filter" data-cy="Filter">
-              {Object.entries(FilterStatus).map(([key, value]) => (
+              {Object.values(FilterStatus).map(value => (
                 <a
-                  key={key}
+                  key={value}
                   href="#/"
                   className={classNames('filter__link', {
-                    selected: todosFilterState.filterStatus === value,
+                    selected: todoListState.filterStatus === value,
                   })}
                   data-cy={`FilterLink${value}`}
-                  onClick={() => todosFilterState.setFilterStatus(value)}
+                  onClick={() => todoListState.setFilterStatus(value)}
                 >
                   {value}
                 </a>
               ))}
             </nav>
-
             <button
               type="button"
               className="todoapp__clear-completed"
               data-cy="ClearCompletedButton"
               onClick={handleClearCompleted}
+              disabled={!someCompleted}
             >
               Clear completed
             </button>
@@ -193,23 +195,10 @@ export const App: React.FC = () => {
           <>no Todos Left</>
         )}
 
-        <div
-          data-cy="ErrorNotification"
-          className={classNames(
-            'notification is-danger is-light has-text-weight-normal',
-            {
-              hidden: !todoListState.error,
-            },
-          )}
-        >
-          <button
-            data-cy="HideErrorButton"
-            type="button"
-            className="delete"
-            onClick={() => todoListState.setError('')}
-          />
-          {todoListState.error}
-        </div>
+        <ErrorNotification
+          error={todoListState.error}
+          setError={todoListState.setError}
+        />
       </div>
     </div>
   );

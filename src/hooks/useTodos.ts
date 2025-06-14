@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Todo, TodoError } from '../types/typedefs';
 import {
   postTodo,
@@ -62,24 +62,15 @@ export const useTodos = () => {
     inputRef.current?.focus();
   }, [todos, loadingTodo]);
 
-  const allCompleted = useMemo(
-    () => todos.length > 0 && todos.every(td => td.completed),
-    [todos],
-  );
+  const allCompleted = todos.length > 0 && todos.every(td => td.completed);
 
-  const someCompleted = useMemo(() => todos.some(td => td.completed), [todos]);
+  const someCompleted = todos.some(td => td.completed);
 
-  const activeCount = useMemo(
-    () => todos.filter(todo => !todo.completed).length,
-    [todos],
-  );
+  const activeCount = todos.filter(todo => !todo.completed).length;
 
-  const completedCount = useMemo(
-    () => todos.filter(todo => todo.completed).length,
-    [todos],
-  );
+  const completedCount = todos.filter(todo => todo.completed).length;
 
-  const todosFiltered = useMemo(() => {
+  const todosFiltered = (() => {
     switch (filterStatus) {
       case FilterStatus.ACTIVE:
         return todos.filter(todo => !todo.completed);
@@ -88,7 +79,7 @@ export const useTodos = () => {
       default:
         return todos;
     }
-  }, [todos, filterStatus]);
+  })();
 
   const addTodo = async (title: string) => {
     const noSpaceQuery = title.trim();

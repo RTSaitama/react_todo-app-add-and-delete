@@ -1,6 +1,5 @@
-import { Todo } from '../types/typedefs';
 import { client } from '../utils/fetchClient';
-
+import { Todo } from '../types/typedefs';
 export const USER_ID = 3090;
 
 export const getTodos = () => {

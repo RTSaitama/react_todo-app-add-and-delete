@@ -1,4 +1,3 @@
-
 import React from 'react';
 import classNames from 'classnames';
 import { USER_ID } from './api/todosMethods';
@@ -41,7 +40,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             className={classNames('todoapp__toggle-all', {
-              'is-active': allCompleted,
+              active: allCompleted,
             })}
             data-cy="ToggleAllButton"
             onClick={toggleAll}
@@ -103,9 +102,8 @@ export const App: React.FC = () => {
         ) : (
           <>no Todos Left</>
         )}
-
-        <ErrorNotification error={error} setError={setError} />
       </div>
+      <ErrorNotification error={error} setError={setError} />
     </div>
   );
 };

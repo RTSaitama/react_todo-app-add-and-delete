@@ -1,5 +1,7 @@
 import { useTodos } from '../hooks/useTodos';
 import { TodoCard } from './TodoCard';
+import { TransitionGroup, CSSTransition } from 'react-transition-group';
+const TRANSITION_DELAY = 300; // m
 
 interface TodoListProps {
   query: string;
@@ -16,24 +18,32 @@ export const TodoList: React.FC<TodoListProps> = ({
 }) => {
   return (
     <section className="todoapp__main" data-cy="TodoList">
-      {todoListState.todosFiltered.map(todo => (
-        <TodoCard
-          key={todo.id}
-          todoListState={todoListState}
-          todo={todo}
-          loadingTodoId={loadingTodoId}
-          setLoadingTodoId={setLoadingTodoId}
-        />
-      ))}
-      {todoListState.tempTodo && (
-        <TodoCard
-          key={0}
-          todo={todoListState.tempTodo}
-          loadingTodoId={loadingTodoId}
-          todoListState={todoListState}
-          setLoadingTodoId={setLoadingTodoId}
-        />
-      )}
+      <TransitionGroup>
+        {todoListState.todosFiltered.map(todo => (
+          <CSSTransition
+            key={todo.id}
+            timeout={TRANSITION_DELAY}
+            classNames="item"
+          >
+            <TodoCard
+              key={todo.id}
+              todoListState={todoListState}
+              todo={todo}
+              loadingTodoId={loadingTodoId}
+              setLoadingTodoId={setLoadingTodoId}
+            />
+          </CSSTransition>
+        ))}
+        {todoListState.tempTodo && (
+          <TodoCard
+            key={0}
+            todo={todoListState.tempTodo}
+            loadingTodoId={loadingTodoId}
+            todoListState={todoListState}
+            setLoadingTodoId={setLoadingTodoId}
+          />
+        )}
+      </TransitionGroup>
     </section>
   );
 };

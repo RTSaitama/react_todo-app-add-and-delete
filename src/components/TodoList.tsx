@@ -26,7 +26,6 @@ export const TodoList: React.FC<TodoListProps> = ({
             classNames="item"
           >
             <TodoCard
-              key={todo.id}
               todoListState={todoListState}
               todo={todo}
               loadingTodoId={loadingTodoId}
@@ -34,14 +33,20 @@ export const TodoList: React.FC<TodoListProps> = ({
             />
           </CSSTransition>
         ))}
+
         {todoListState.tempTodo && (
-          <TodoCard
-            key={0}
-            todo={todoListState.tempTodo}
-            loadingTodoId={loadingTodoId}
-            todoListState={todoListState}
-            setLoadingTodoId={setLoadingTodoId}
-          />
+          <CSSTransition
+            key="temp-todo"
+            timeout={TRANSITION_DELAY}
+            classNames="item"
+          >
+            <TodoCard
+              todo={todoListState.tempTodo}
+              loadingTodoId={loadingTodoId}
+              todoListState={todoListState}
+              setLoadingTodoId={setLoadingTodoId}
+            />
+          </CSSTransition>
         )}
       </TransitionGroup>
     </section>
